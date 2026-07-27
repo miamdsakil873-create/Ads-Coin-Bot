@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Master Web Admin Terminal - Telegram Ads Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- AUTHENTICATION OVERLAY -->
+  <div id="authOverlay" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-5 shadow-2xl">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold">
+          <i data-lucide="shield-check" class="w-7 h-7"></i>
+        </div>
+        <h2 class="text-lg font-extrabold text-slate-100">Standalone Admin Terminal</h2>
+        <p class="text-xs text-slate-400">Enter master administrative password to access secure controller API.</p>
+      </div>
+
+      <form id="loginForm" class="space-y-3">
+        <input 
+          type="password" 
+          id="adminPassInput"
+          placeholder="Admin Master Password (admin123)"
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-amber-500 font-mono text-center text-sm"
+          required
+        />
+        <p id="loginError" class="text-xs text-red-400 font-bold text-center hidden"></p>
+        <button 
+          type="submit" 
+          class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 hover:brightness-110"
+        >
+          Authenticate Key
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD WRAPPER -->
+  <div id="adminApp" class="hidden min-h-screen flex flex-col">
+    <!-- Top Nav Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-sm sm:text-base font-extrabold text-slate-100 flex items-center gap-2">
+            AdCoinz Central Admin Controller
+            <span class="px-2 py-0.5 rounded-full text-[9px] bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+              API Live
+            </span>
+          </h1>
+          <p class="text-[10px] text-slate-400">Isolated Codebase 2 Terminal</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button 
+          onclick="fetchAdminDashboard()"
+          class="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5"
+        >
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Refresh</span>
+        </button>
+        <button 
+          onclick="logoutAdmin()"
+          class="p-2.5 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 text-xs font-bold transition-colors"
+        >
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 max-w-6xl mx-auto w-full p-4 sm:p-6 space-y-6">
+      <!-- Sub Nav Tabs -->
+      <nav class="flex bg-slate-900 p-1.5 rounded-2xl border border-slate-800 text-xs overflow-x-auto gap-1">
+        <button onclick="switchTab('overview')" id="tab-overview" class="admin-tab active">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Overview
+        </button>
+        <button onclick="switchTab('cpa')" id="tab-cpa" class="admin-tab">
+          <i data-lucide="check-square" class="w-4 h-4"></i> CPA Tasks (CRUD)
+        </button>
+        <button onclick="switchTab('withdrawals')" id="tab-withdrawals" class="admin-tab">
+          <i data-lucide="wallet" class="w-4 h-4"></i> Payout Queue
+        </button>
+        <button onclick="switchTab('config')" id="tab-config" class="admin-tab">
+          <i data-lucide="settings" class="w-4 h-4"></i> Gate & Monetag Settings
+        </button>
+        <button onclick="switchTab('users')" id="tab-users" class="admin-tab">
+          <i data-lucide="users" class="w-4 h-4"></i> Users & Fraud
+        </button>
+        <button onclick="switchTab('broadcast')" id="tab-broadcast" class="admin-tab">
+          <i data-lucide="send" class="w-4 h-4"></i> Mass Broadcaster
+        </button>
+      </nav>
+
+      <!-- 1. OVERVIEW VIEW -->
+      <section id="view-overview" class="tab-view space-y-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 font-semibold block">Total Users</span>
+            <span id="stat-users" class="text-2xl font-extrabold text-slate-100 mt-1 block">0</span>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-2xl border border-amber-500/30">
+            <span class="text-[10px] text-amber-400 font-semibold block">Pending Payout Requests</span>
+            <span id="stat-pending" class="text-2xl font-extrabold text-amber-300 mt-1 block">0</span>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-2xl border border-emerald-500/30">
+            <span class="text-[10px] text-emerald-400 font-semibold block">Total Approved Coins</span>
+            <span id="stat-approved" class="text-2xl font-extrabold text-emerald-400 mt-1 block">0</span>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-2xl border border-cyan-500/30">
+            <span class="text-[10px] text-cyan-400 font-semibold block">Ads Watched Today</span>
+            <span id="stat-ads" class="text-2xl font-extrabold text-cyan-400 mt-1 block">0</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+          <h3 class="text-sm font-bold text-slate-200">System Gateway Configuration Overview</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+              <span class="text-slate-400">Monetag Zone ID:</span>
+              <span id="overview-monetag-zone" class="font-mono text-cyan-300 font-bold block">-</span>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+              <span class="text-slate-400">Withdrawal Referral Gate:</span>
+              <span id="overview-ref-gate" class="font-mono text-amber-300 font-bold block">-</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. CPA TASKS CRUD VIEW -->
+      <section id="view-cpa" class="tab-view hidden space-y-6">
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-purple-400"></i>
+            Create New CPA / Direct Link Offer Task
+          </h3>
+
+          <form id="createCpaForm" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Task Title</label>
+              <input type="text" id="cpaTitle" placeholder="e.g. Join Telegram Channel" class="admin-input" required />
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Target URL (e.g., https://rb.gy)</label>
+              <input type="url" id="cpaUrl" placeholder="https://rb.gy/sample" class="admin-input" required />
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Category</label>
+              <select id="cpaCategory" class="admin-input">
+                <option value="Visit Website">Visit Website</option>
+                <option value="Sign Up">Sign Up</option>
+                <option value="Telegram Channel">Telegram Channel</option>
+                <option value="App Install">App Install</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Coin Reward</label>
+              <input type="number" id="cpaReward" value="300" class="admin-input" required />
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Timer (Seconds)</label>
+              <input type="number" id="cpaTimer" value="15" class="admin-input" required />
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Secret Proof Keyword (Optional)</label>
+              <input type="text" id="cpaSecret" placeholder="e.g. JOIN2026" class="admin-input" />
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="text-xs font-bold text-slate-300 block mb-1">Instructions for User</label>
+              <textarea id="cpaInstructions" rows="2" placeholder="Open link, complete signup, enter proof..." class="admin-input"></textarea>
+            </div>
+
+            <button type="submit" class="sm:col-span-2 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs shadow-md">
+              Publish Dynamic CPA Task
+            </button>
+          </form>
+        </div>
+
+        <!-- Task List -->
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+          <h3 class="text-sm font-bold text-slate-200">Active Custom CPA Tasks</h3>
+          <div id="cpaTasksList" class="space-y-3">
+            <p class="text-xs text-slate-500">Loading tasks...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. PAYOUT QUEUE VIEW -->
+      <section id="view-withdrawals" class="tab-view hidden space-y-4">
+        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-100">Live Payout Verification Queue</h3>
+          <span id="pendingBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            0 Pending
+          </span>
+        </div>
+
+        <div id="withdrawalsList" class="space-y-3">
+          <p class="text-xs text-slate-500 text-center py-6">Loading payout requests...</p>
+        </div>
+      </section>
+
+      <!-- 4. GATE & MONETAG CONFIG VIEW -->
+      <section id="view-config" class="tab-view hidden max-w-lg mx-auto">
+        <form id="configForm" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
+          <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <i data-lucide="sliders" class="w-4 h-4 text-amber-400"></i>
+            Monetag & Withdrawal Gate Parameters
+          </h3>
+
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Monetag Zone ID</label>
+            <input type="text" id="cfgZoneId" class="admin-input font-mono" required />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Monetag SDK Script URL</label>
+            <input type="text" id="cfgScriptUrl" class="admin-input font-mono" required />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Coin Reward Per Ad View</label>
+            <input type="number" id="cfgAdReward" class="admin-input font-mono" required />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Minimum BDT Withdrawal Coins</label>
+            <input type="number" id="cfgMinBdt" class="admin-input font-mono" required />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Minimum USDT Withdrawal Coins</label>
+            <input type="number" id="cfgMinUsdt" class="admin-input font-mono" required />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">
+              Minimum Active Referrals Gate Required To Unlock Payouts
+            </label>
+            <input type="number" id="cfgMinRefGate" class="admin-input font-mono" required />
+            <p class="text-[10px] text-slate-400 mt-1">Users cannot request payouts unless their level 1 referrals count reaches this threshold.</p>
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-md">
+            Save System Configurations
+          </button>
+        </form>
+      </section>
+
+      <!-- 5. USERS VIEW -->
+      <section id="view-users" class="tab-view hidden space-y-4">
+        <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 flex items-center gap-2">
+          <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
+          <input type="text" id="userSearchInput" onkeyup="filterUsersList()" placeholder="Search user by Telegram ID, Name or Username..." class="w-full bg-transparent text-xs text-slate-200 outline-none" />
+        </div>
+
+        <div id="usersList" class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
+          <p class="text-xs text-slate-500 text-center py-6">Loading registered users...</p>
+        </div>
+      </section>
+
+      <!-- 6. BROADCASTER VIEW -->
+      <section id="view-broadcast" class="tab-view hidden max-w-lg mx-auto">
+        <form id="broadcastForm" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
+          <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <i data-lucide="send" class="w-4 h-4 text-cyan-400"></i>
+            Mass Push Notification Broadcaster
+          </h3>
+
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Message Content (Supports Markdown)</label>
+            <textarea id="broadcastMsg" rows="5" placeholder="🎉 Special Bonus Alert! Complete 5 ads today for +500 extra coins!" class="admin-input font-mono" required></textarea>
+          </div>
+
+          <p id="broadcastResult" class="text-xs font-bold hidden p-2.5 rounded-xl"></p>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-extrabold text-xs shadow-md">
+            Dispatch Broadcast Notification
+          </button>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <style>
+    .admin-tab {
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .admin-tab:hover {
+      color: #f8fafc;
+    }
+    .admin-tab.active {
+      background-color: #f59e0b;
+      color: #020617;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+    }
+    .admin-input {
+      width: 100%;
+      background-color: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #f1f5f9;
+      outline: none;
+    }
+    .admin-input:focus {
+      border-color: #f59e0b;
+    }
+  </style>
+
+  <script>
+    let globalData = null;
+
+    // Login Form Submit
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pass = document.getElementById('adminPassInput').value;
+      const errorEl = document.getElementById('loginError');
+      errorEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pass })
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem('adminToken', data.token);
+          document.getElementById('authOverlay').classList.add('hidden');
+          document.getElementById('adminApp').classList.remove('hidden');
+          fetchAdminDashboard();
+        } else {
+          errorEl.textContent = data.message || 'Invalid password!';
+          errorEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorEl.textContent = 'Connection error to backend!';
+        errorEl.classList.remove('hidden');
+      }
+    });
+
+    function logoutAdmin() {
+      localStorage.removeItem('adminToken');
+      location.reload();
+    }
+
+    async function fetchAdminDashboard() {
+      try {
+        const res = await fetch('/api/admin/dashboard');
+        const data = await res.json();
+        if (data.success) {
+          globalData = data;
+          renderOverview(data);
+          renderConfigForm(data.config);
+          renderWithdrawalsList(data.withdrawals);
+          renderUsersList(data.users);
+          fetchCpaTasks();
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      }
+    }
+
+    function renderOverview(data) {
+      document.getElementById('stat-users').textContent = data.stats.totalUsers;
+      document.getElementById('stat-pending').textContent = data.stats.totalPendingWithdrawalsCount;
+      document.getElementById('stat-approved').textContent = data.stats.totalApprovedWithdrawalsCoins.toLocaleString() + ' Coins';
+      document.getElementById('stat-ads').textContent = data.stats.totalAdsWatchedToday;
+
+      document.getElementById('overview-monetag-zone').textContent = data.config.monetagZoneId || '9537184';
+      document.getElementById('overview-ref-gate').textContent = (data.config.minReferralsRequiredForWithdrawal || 3) + ' Active Referrals';
+    }
+
+    function renderConfigForm(cfg) {
+      document.getElementById('cfgZoneId').value = cfg.monetagZoneId || '9537184';
+      document.getElementById('cfgScriptUrl').value = cfg.monetagScriptUrl || '//libtl.com';
+      document.getElementById('cfgAdReward').value = cfg.adRewardCoins || 150;
+      document.getElementById('cfgMinBdt').value = cfg.minWithdrawalCoinsBdt || 5000;
+      document.getElementById('cfgMinUsdt').value = cfg.minWithdrawalCoinsUsdt || 10000;
+      document.getElementById('cfgMinRefGate').value = cfg.minReferralsRequiredForWithdrawal || 3;
+    }
+
+    // Save Config Form
+    document.getElementById('configForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const updated = {
+        monetagZoneId: document.getElementById('cfgZoneId').value,
+        monetagScriptUrl: document.getElementById('cfgScriptUrl').value,
+        adRewardCoins: Number(document.getElementById('cfgAdReward').value),
+        minWithdrawalCoinsBdt: Number(document.getElementById('cfgMinBdt').value),
+        minWithdrawalCoinsUsdt: Number(document.getElementById('cfgMinUsdt').value),
+        minReferralsRequiredForWithdrawal: Number(document.getElementById('cfgMinRefGate').value)
+      };
+
+      await fetch('/api/admin/config/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: updated })
+      });
+      alert('Configurations updated successfully!');
+      fetchAdminDashboard();
+    });
+
+    // CPA Tasks Fetch & Render
+    async function fetchCpaTasks() {
+      const res = await fetch('/api/admin/cpa-tasks');
+      const data = await res.json();
+      if (data.success) {
+        const container = document.getElementById('cpaTasksList');
+        if (!data.tasks || data.tasks.length === 0) {
+          container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">No custom CPA tasks created yet.</p>';
+          return;
+        }
+
+        container.innerHTML = data.tasks.map(t => `
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-start justify-between text-xs gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">${t.category}</span>
+                <h4 class="font-bold text-slate-100">${t.title}</h4>
+              </div>
+              <p class="text-slate-400 mt-1">${t.description}</p>
+              <span class="text-cyan-400 font-mono block mt-1">URL: ${t.externalUrl}</span>
+              ${t.secretCode ? `<span class="text-emerald-400 font-mono block text-[10px]">Proof Secret: ${t.secretCode}</span>` : ''}
+            </div>
+
+            <div class="text-right shrink-0 space-y-2">
+              <span class="font-extrabold text-amber-400 block">+${t.rewardCoins} Coins</span>
+              <button onclick="deleteCpaTask('${t.id}')" class="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-400 font-bold hover:bg-red-500/30 text-[10px]">
+                Delete Task 🗑️
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Create CPA Form
+    document.getElementById('createCpaForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById('cpaTitle').value,
+        externalUrl: document.getElementById('cpaUrl').value,
+        category: document.getElementById('cpaCategory').value,
+        rewardCoins: Number(document.getElementById('cpaReward').value),
+        requiredTimeSeconds: Number(document.getElementById('cpaTimer').value),
+        secretCode: document.getElementById('cpaSecret').value,
+        requiresProof: !!document.getElementById('cpaSecret').value,
+        instructions: document.getElementById('cpaInstructions').value
+      };
+
+      await fetch('/api/admin/cpa-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      alert('CPA Task created!');
+      document.getElementById('createCpaForm').reset();
+      fetchCpaTasks();
+    });
+
+    async function deleteCpaTask(id) {
+      if (!confirm('Are you sure you want to delete this task?')) return;
+      await fetch('/api/admin/cpa-tasks/' + id, { method: 'DELETE' });
+      fetchCpaTasks();
+    }
+
+    // Render Withdrawals List
+    function renderWithdrawalsList(withdrawals) {
+      const container = document.getElementById('withdrawalsList');
+      const pendingCount = withdrawals.filter(w => w.status === 'Pending').length;
+      document.getElementById('pendingBadge').textContent = pendingCount + ' Pending';
+
+      if (!withdrawals || withdrawals.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">No payout requests in database.</p>';
+        return;
+      }
+
+      container.innerHTML = withdrawals.map(w => `
+        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-bold text-slate-100">${w.username}</span>
+              <span class="text-slate-400 text-[10px] ml-1">(TG ID: ${w.telegramId})</span>
+            </div>
+            <span class="font-bold text-amber-400">
+              ${w.fiatCurrency === 'BDT' ? '৳' + w.amountFiat + ' BDT' : '$' + w.amountFiat + ' USD'} (${w.amountCoins} Coins)
+            </span>
+          </div>
+
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center font-mono text-[11px]">
+            <span>Gateway: <strong class="text-cyan-400">${w.paymentMethod}</strong></span>
+            <span>Account: <strong class="text-emerald-400">${w.accountNumber}</strong></span>
+          </div>
+
+          ${w.status === 'Pending' ? `
+            <div class="flex items-center gap-2 pt-1">
+              <button onclick="approvePayout('${w.id}')" class="flex-1 py-2 rounded-xl bg-emerald-500 text-slate-950 font-extrabold hover:bg-emerald-400">
+                Approve & Mark Paid ✅
+              </button>
+              <button onclick="rejectPayout('${w.id}')" class="flex-1 py-2 rounded-xl bg-red-500/20 text-red-300 font-bold border border-red-500/30 hover:bg-red-500/30">
+                Reject & Refund ❌
+              </button>
+            </div>
+          ` : `
+            <div class="text-[10px] text-slate-400">
+              Status: <strong class="${w.status === 'Approved' ? 'text-emerald-400' : 'text-red-400'}">${w.status}</strong>
+              ${w.rejectionReason ? ` | Reason: ${w.rejectionReason}` : ''}
+            </div>
+          `}
+        </div>
+      `).join('');
+    }
+
+    async function approvePayout(wId) {
+      const note = prompt('Transaction Reference / Note (Optional):') || 'Paid via Manual Gateway';
+      await fetch('/api/admin/withdrawal/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ withdrawalId: wId, action: 'approve', note })
+      });
+      fetchAdminDashboard();
+    }
+
+    async function rejectPayout(wId) {
+      const reason = prompt('Rejection reason for user:') || 'Invalid account details';
+      await fetch('/api/admin/withdrawal/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ withdrawalId: wId, action: 'reject', rejectionReason: reason })
+      });
+      fetchAdminDashboard();
+    }
+
+    // Render Users
+    function renderUsersList(users) {
+      const container = document.getElementById('usersList');
+      if (!users || users.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">No users found.</p>';
+        return;
+      }
+
+      container.innerHTML = users.map(u => `
+        <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between text-xs">
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="font-bold text-slate-100">${u.firstName}</h4>
+              <span class="text-slate-400 text-[10px]">@${u.username}</span>
+              ${u.isBanned ? '<span class="px-1.5 py-0.2 rounded bg-red-500/20 text-red-400 font-bold text-[9px]">BANNED</span>' : ''}
+            </div>
+            <span class="text-[10px] text-slate-500 block font-mono mt-0.5">
+              TG ID: ${u.telegramId} | Balance: ${u.totalBalanceCoins} Coins | Refers: ${u.referralEarnings ? u.referralEarnings.level1Count : 0}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="adjustUserBalance('${u.id}')" class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 font-bold text-[10px]">
+              ± Coins
+            </button>
+            <button onclick="toggleUserBan('${u.id}', ${u.isBanned})" class="px-2.5 py-1 rounded-lg font-bold text-[10px] ${u.isBanned ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">
+              ${u.isBanned ? 'Unban' : 'Ban'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterUsersList() {
+      if (!globalData || !globalData.users) return;
+      const query = document.getElementById('userSearchInput').value.toLowerCase();
+      const filtered = globalData.users.filter(u => 
+        u.firstName.toLowerCase().includes(query) ||
+        u.username.toLowerCase().includes(query) ||
+        u.telegramId.toString().includes(query)
+      );
+      renderUsersList(filtered);
+    }
+
+    async function adjustUserBalance(userId) {
+      const val = prompt('Enter coins adjustment (e.g. +500 or -500):');
+      if (!val) return;
+      await fetch('/api/admin/user/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action: 'adjust_balance', balanceAdjustment: Number(val) })
+      });
+      fetchAdminDashboard();
+    }
+
+    async function toggleUserBan(userId, isBanned) {
+      const action = isBanned ? 'unban' : 'ban';
+      const reason = !isBanned ? prompt('Enter ban reason:') : null;
+      await fetch('/api/admin/user/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action, banReason: reason })
+      });
+      fetchAdminDashboard();
+    }
+
+    // Broadcaster Submit
+    document.getElementById('broadcastForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('broadcastMsg').value;
+      const res = await fetch('/api/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      const resultEl = document.getElementById('broadcastResult');
+      resultEl.textContent = data.message;
+      resultEl.className = 'text-xs font-bold p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+      resultEl.classList.remove('hidden');
+      document.getElementById('broadcastMsg').value = '';
+    });
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.admin-tab').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+
+      document.getElementById('tab-' + tabId).classList.add('active');
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+    }
+
+    // Lucide Init
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      if (localStorage.getItem('adminToken')) {
+        document.getElementById('authOverlay').classList.add('hidden');
+        document.getElementById('adminApp').classList.remove('hidden');
+        fetchAdminDashboard();
+      }
+    });
+  </script>
+</body>
+</html>
